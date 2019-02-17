@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.5/esri/css/main.css">
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+<div id="viewDiv"></div>
+<script src="https://js.arcgis.com/4.5/"></script>
+<script>
+    require([
+        "esri/Map",
+        "esri/views/SceneView",
+        "esri/layers/GraphicsLayer",
+        "esri/geometry/Point",
+        "esri/Graphic",
+        "esri/tasks/QueryTask",
+        "esri/tasks/support/Query",
+        "esri/geometry/Polygon",
+        "esri/layers/FeatureLayer",
+        "dojo/domReady!"
+    ],function (Map,SceneView,GraphicsLayer,Point,Graphic,QueryTask,Query,Polygon,FeatureLayer) {
+        // var resultsLyr = new GraphicsLayer();
+        var map = new Map({
+            basemap:"hybrid",
+            // layers: [resultsLyr]
+        })
+
+        var view = new SceneView({
+            container:"viewDiv",
+            center:[116.49, 39.74],
+            map:map
+        })
+
+       // 添加一个地图底层图层
+        var featureLayer = new FeatureLayer({
+            url: "http://10.10.2.223:6080/arcgis/rest/services/country1/MapServer"
+        });
+        map.add(featureLayer)
+
+        // 创建query对象，设置过滤要求，传递给QueryTask的执行函数
+        // 返回的函数是FeatureSet，包含几何，属性和符号
+        var query = new Query();
+
+        // 在图层上执行查询操作
+        var queryTask = new QueryTask({
+            url:"http://10.10.2.223:6080/arcgis/rest/services/country1/MapServer/0",
+        });
+
+        // 创建图形层
+        var signRegionLayer = new GraphicsLayer()
+        map.add(signRegionLayer)
+
+        view.on("click",function (event) {
+            event.stopPropagation();
+
+            // 清除上一个选中的高亮的地图
+            if(signRegionLayer.graphics.length > 0){
+                signRegionLayer.graphics.removeAll();
+            }
+
+            var point = new Point({
+                longitude:event.mapPoint.longitude,
+                latitude:event.mapPoint.latitude
+            });
+
+            // 高亮样式
+            var signSymbol = {
+                type: 'simple-fill',
+                color: [48,51, 200, 0.3 ],
+                style: "solid",
+                outline: {
+                    color: "white",
+                    width: 1
+                }
+            };
+
+            // 查询集合类型：点
+            query.geometry=point
+            query.returnGeometry = true; //是否突出显示
+            query.outFields = ["*"]; //要包含在FeatureSet中的属性字段，必须是实际字段名称不是别名，全部显示为*
+            view.popup.open({
+                title:"message",
+                location:event.mapPoint
+            })
+
+
+
+            queryTask.execute(query).then(function (result) {
+                console.log(result)
+                view.popup.content = "国家："+result.features[0].attributes.NAME_CHINE
+                var countryName = result.features[0].attributes.NAME_ENGLI
+                var indexGeometry = result.features[0].geometry;
+                console.log(countryName)
+                console.log(indexGeometry)
+
+                var graphic = new Graphic({
+                    // 与图形关联的字段和字段值的名称 - 值对。
+                    attributes:{
+                        country:countryName
+                    },
+                    geometry:indexGeometry, //定义图形位置的几何体。
+                    symbol:signSymbol //图形的符号。
+                })
+                signRegionLayer.add(graphic)
+            });
+        })
+    })
+
+</script>
+
+</body>
+</html>
