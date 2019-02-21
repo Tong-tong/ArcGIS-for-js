@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChinaToNewYork</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.5/esri/css/main.css">
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+        #newYork{
+            position: absolute;
+            top: 15px;
+            left: 70px;
+            background: white;
+            opacity: 0.85;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewDiv"></div>
+    <div id="newYork">
+        <span>纽约</span>
+    </div>
+    <script src="https://js.arcgis.com/4.5/"></script>
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/SceneView",
+            "esri/layers/GraphicsLayer",
+            "esri/Graphic",
+            "dojo/domReady!"
+        ],function (Map,SceneView,GraphicsLayer,Graphic) {
+            var map = new Map({
+                basemap:"hybrid",
+                ground:"world-elevation"
+            })
+
+            var view = new SceneView({
+                container:"viewDiv",
+                map:map,
+                center:[116.49, 39.74]
+            })
+
+            // 添加图形图层
+            var graphicsLayer = new GraphicsLayer();
+            map.add(graphicsLayer)
+
+            // 纽约位置
+            var point = {
+                type:"point",
+                x:-74.005,
+                y: 40.714,
+                z:1010
+            };
+
+            // 符号样式
+            var markerSymbol = {
+                type: "simple-marker",
+                color:[ 51,51, 204, 0.3 ],
+                outline:{
+                    color: [255, 255, 255],
+                    width: 2
+                }
+            };
+
+            // 创建图形
+            var pointGraphic = new Graphic({
+                geometry: point, //集合位置
+                symbol: markerSymbol //符号
+            });
+
+            // 添加到图层
+            graphicsLayer.add(pointGraphic);
+
+            var newYorkBtn = document.getElementById("newYork")
+
+            // 监听切换按钮
+            newYorkBtn.addEventListener("click",function () {
+                console.log(newYorkBtn.innerText)
+                if(newYorkBtn.innerText === '纽约'){
+                    view.goTo({
+                        center: [-74.005,40.714]
+                    })
+                    newYorkBtn.innerText="北京"
+                }else {
+                    view.goTo({
+                        center: [116.49, 39.74]
+                    })
+                    newYorkBtn.innerText="纽约"
+                }
+            })
+
+        });
+    </script>
+</body>
+</html>
