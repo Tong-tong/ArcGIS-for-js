@@ -21,6 +21,7 @@
 <script>
     require([
         "esri/Map",
+        "esri/tasks/Locator",
         "esri/views/SceneView",
         "esri/layers/GraphicsLayer",
         "esri/geometry/Point",
@@ -30,7 +31,7 @@
         "esri/geometry/Polygon",
         "esri/layers/FeatureLayer",
         "dojo/domReady!"
-    ],function (Map,SceneView,GraphicsLayer,Point,Graphic,QueryTask,Query,Polygon,FeatureLayer) {
+    ],function (Map,Locator,SceneView,GraphicsLayer,Point,Graphic,QueryTask,Query,Polygon,FeatureLayer) {
         // var resultsLyr = new GraphicsLayer();
         var map = new Map({
             basemap:"hybrid",
@@ -62,12 +63,23 @@
         var signRegionLayer = new GraphicsLayer()
         map.add(signRegionLayer)
 
+        // 使用世界地理编码服务创建定位器任务
+        var locatorTask = new Locator({
+            url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
+        })
+
         view.on("click",function (event) {
             event.stopPropagation();
 
             // 清除上一个选中的高亮的地图
             if(signRegionLayer.graphics.length > 0){
                 signRegionLayer.graphics.removeAll();
+            }
+
+            // 清空弹框内容信息
+            if(view.popup.content){
+                console.log(view.popup.content)
+                view.popup.content = ""
             }
 
             var point = new Point({
@@ -95,11 +107,18 @@
                 location:event.mapPoint
             })
 
-
-
+            // 查询选中点所属国家并高亮显示国家区域
             queryTask.execute(query).then(function (result) {
                 console.log(result)
-                view.popup.content = "国家："+result.features[0].attributes.NAME_CHINE
+
+                // 返回选中点的城市详细信息
+                locatorTask.locationToAddress(event.mapPoint)
+                    .then(function (res) {
+                        console.log(res)
+                        var city=res.address
+                        view.popup.content = result.features[0].attributes.NAME_CHINE+'</br>'+city
+                    })
+
                 var countryName = result.features[0].attributes.NAME_ENGLI
                 var indexGeometry = result.features[0].geometry;
                 console.log(countryName)
